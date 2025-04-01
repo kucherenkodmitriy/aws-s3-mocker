@@ -1,4 +1,4 @@
-# AWS S3 Mocker
+# AWS S3 Mocker (Work In Progress)
 
 A lightweight mock implementation of AWS S3 API for local development and testing purposes. This project provides a simple HTTP server that mimics basic S3 operations.
 
