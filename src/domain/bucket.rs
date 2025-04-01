@@ -3,24 +3,27 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Bucket {
-    pub id: Uuid,
+    pub id: String,
     pub name: String,
 }
 
 impl Bucket {
-    pub fn new(name: String) -> Bucket {
-        Bucket {
-            id: Uuid::new_v4(),
+    pub fn new(name: String) -> Self {
+        if !Self::validate_name(&name) {
+            panic!("Invalid bucket name: {}", name);
+        }
+        Self {
+            id: Uuid::new_v4().to_string(),
             name,
         }
     }
 
     pub fn validate_name(name: &str) -> bool {
         // S3 bucket name rules:
-        // - 3-63 characters long
-        // - Can contain lowercase letters, numbers, dots (.), and hyphens (-)
-        // - Must start and end with a letter or number
-        // - Must not be formatted as an IP address
+        // 1. Must be between 3 and 63 characters long
+        // 2. Can only contain lowercase letters, numbers, dots (.), and hyphens (-)
+        // 3. Must begin and end with a letter or number
+        // 4. Must not be formatted as an IP address
         if name.len() < 3 || name.len() > 63 {
             return false;
         }
@@ -32,27 +35,30 @@ impl Bucket {
         }
 
         // Check if contains only valid characters
-        if !name.chars().all(|c| c.is_alphanumeric() || c == '.' || c == '-') {
-            return false;
-        }
-
-        // Check if it's an IP address format (e.g., 192.168.1.1)
-        let parts: Vec<&str> = name.split('.').collect();
-        if parts.len() == 4 {
-            // Check if all parts are valid numbers
-            if parts.iter().all(|part| part.parse::<u8>().is_ok()) {
+        for c in name.chars() {
+            if !c.is_ascii_lowercase() && !c.is_ascii_digit() && c != '.' && c != '-' {
                 return false;
             }
+        }
+
+        // Check if it's not an IP address
+        if name.split('.').all(|part| part.parse::<u8>().is_ok()) {
+            return false;
         }
 
         true
     }
 
+    #[allow(dead_code)]
     pub fn is_valid(&self) -> bool {
         Self::validate_name(&self.name)
     }
 
+    #[allow(dead_code)]
     pub fn with_name(mut self, name: String) -> Self {
+        if !Self::validate_name(&name) {
+            panic!("Invalid bucket name: {}", name);
+        }
         self.name = name;
         self
     }
@@ -69,7 +75,7 @@ mod tests {
         let bucket = Bucket::new(bucket_name.clone());
 
         assert_eq!(bucket.name, bucket_name);
-        assert!(bucket.id != Uuid::nil());
+        assert!(bucket.id != Uuid::nil().to_string());
     }
 
     #[test]
@@ -97,7 +103,7 @@ mod tests {
         let debug_string = format!("{:?}", bucket);
 
         assert!(debug_string.contains("test-bucket"));
-        assert!(debug_string.contains(&bucket.id.to_string()));
+        assert!(debug_string.contains(&bucket.id));
     }
 
     #[test]
@@ -142,7 +148,11 @@ mod tests {
         let valid_bucket = Bucket::new("valid-bucket".to_string());
         assert!(valid_bucket.is_valid());
 
-        let invalid_bucket = Bucket::new("-invalid-bucket".to_string());
+        // Create a bucket with an invalid name by directly constructing it
+        let invalid_bucket = Bucket {
+            id: Uuid::new_v4().to_string(),
+            name: "-invalid-bucket".to_string(),
+        };
         assert!(!invalid_bucket.is_valid());
     }
 }
