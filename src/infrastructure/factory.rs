@@ -54,25 +54,59 @@ impl ApplicationFactory for CliFactory {
         let cli = CliHandler::new();
         
         match self.command.as_str() {
+            // Bucket operations
             "create" => {
                 if self.args.is_empty() {
                     return Err("Bucket name is required".into());
                 }
                 let bucket_name = &self.args[0];
-                cli.create_bucket(bucket_name)?;
+                cli.create_bucket(bucket_name).await?;
             }
             "list" => {
-                cli.list_buckets()?;
+                cli.list_buckets().await?;
             }
             "delete" => {
                 if self.args.is_empty() {
                     return Err("Bucket name is required".into());
                 }
                 let bucket_name = &self.args[0];
-                cli.delete_bucket(bucket_name)?;
+                cli.delete_bucket(bucket_name).await?;
+            }
+            // Object operations
+            "put-object" => {
+                if self.args.len() < 3 {
+                    return Err("Usage: put-object <bucket> <key> <content>".into());
+                }
+                let bucket_name = &self.args[0];
+                let key = &self.args[1];
+                let content = self.args[2].as_bytes().to_vec();
+                cli.put_object(bucket_name, key, content).await?;
+            }
+            "get-object" => {
+                if self.args.len() < 2 {
+                    return Err("Usage: get-object <bucket> <key>".into());
+                }
+                let bucket_name = &self.args[0];
+                let key = &self.args[1];
+                cli.get_object(bucket_name, key).await?;
+            }
+            "delete-object" => {
+                if self.args.len() < 2 {
+                    return Err("Usage: delete-object <bucket> <key>".into());
+                }
+                let bucket_name = &self.args[0];
+                let key = &self.args[1];
+                cli.delete_object(bucket_name, key).await?;
+            }
+            "list-objects" => {
+                if self.args.is_empty() {
+                    return Err("Usage: list-objects <bucket>".into());
+                }
+                let bucket_name = &self.args[0];
+                cli.list_objects(bucket_name).await?;
             }
             _ => {
-                return Err(format!("Unknown command: {}", self.command).into());
+                return Err(format!("Unknown command: {}. Available commands: create, list, delete, put-object, get-object, delete-object, list-objects", self.command).into());
             }
         }
         Ok(())

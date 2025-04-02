@@ -3,19 +3,22 @@ use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Object {
-    pub id: Uuid,
+    pub id: String,
     pub key: String,
-    pub bucket_id: Uuid,
-    pub data: Vec<u8>,
+    pub content: Vec<u8>,
+    pub content_type: String,
+    pub size: usize,
 }
 
 impl Object {
-    pub fn new(key: String, bucket_id: Uuid, data: Vec<u8>) -> Object {
-        Object {
-            id: Uuid::new_v4(),
+    pub fn new(key: String, content: Vec<u8>, content_type: String) -> Self {
+        let size = content.len();
+        Self {
+            id: Uuid::new_v4().to_string(),
             key,
-            bucket_id,
-            data,
+            content,
+            content_type,
+            size,
         }
     }
 }
